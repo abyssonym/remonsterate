@@ -81,7 +81,35 @@ class MonsterSpriteObject(TableObject):
             rows.append(row)
 
         assert len(rows) == 8
+        #assert self.interleave_tile(rows) == tile
         return rows
+
+    def interleave_tile(self, old_tile):
+        if self.is_8color:
+            new_tile = [0]*24
+        else:
+            new_tile = [0]*32
+
+        assert len(old_tile) == 8
+        for (j, old_row) in enumerate(old_tile):
+            assert len(old_row) == 8
+            for (i, pixel) in enumerate(old_row):
+                i = 7 - i
+                a = bool(pixel & 1)
+                b = bool(pixel & 2)
+                c = bool(pixel & 4)
+                d = bool(pixel & 8)
+
+                new_tile[(j*2)] |= (a << i)
+                new_tile[(j*2)+1] |= (b << i)
+                if self.is_8color:
+                    new_tile[j+16] |= (c << i)
+                else:
+                    new_tile[(j*2)+16] |= (c << i)
+                    new_tile[(j*2)+17] |= (d << i)
+
+        assert self.deinterleave_tile(new_tile) == old_tile
+        return bytes(new_tile)
 
     @property
     def tiles(self):
