@@ -1,0 +1,10 @@
+MouldObject             mould_table.txt             2d01a   13
+FormationObject         formation_table.txt         f6200   576
+MonsterSpriteObject     monster_sprite_table.txt    127000  384
+MonsterPaletteObject    monster_palette_table.txt   127820  384
+MonsterComp8Object      monster_comp8_table.txt     12a824  128
+MonsterComp16Object     monster_comp16_table.txt    12ac24  48
+$comp8_pointer          12a820
+$comp16_pointer         12a822
+$monster_graphics       297000
+$memory_limit           16384
