@@ -1,0 +1,17 @@
+# monster graphics relocation patch created by madsiur
+
+012114: 69 00
+01211a: 69 f2
+
+03af8d: a9 f2
+03af93: a9 00 00
+
+01217a: 6f 20 a8 f1
+012184: bf 00 00 f1
+0121a0: 6f 22 a8 f1
+0121aa: bf 00 00 f1
+
+03afd3: a9 f1
+03affd: a9 f1
+
+3fffff: 00
