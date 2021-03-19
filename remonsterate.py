@@ -13,7 +13,7 @@ from time import time, sleep, gmtime
 from collections import Counter
 from itertools import combinations
 from sys import argv, exc_info
-from traceback import print_exc
+import traceback
 
 
 VERSION = 1
@@ -255,17 +255,18 @@ class MonsterSpriteObject(TableObject):
         else:
             num_tiles_width = 8
 
+        data = self.image.tobytes()
         for jj in range(num_tiles_width):
             stencil_value = 0
             for ii in range(num_tiles_width):
                 tile = []
                 for j in range(8):
                     row = []
+                    y = (jj*8) + j
                     for i in range(8):
                         x = (ii*8) + i
-                        y = (jj*8) + j
                         try:
-                            row.append(self.image.getpixel((x, y)))
+                            row.append(int(data[(y*self.image.width) + x]))
                         except IndexError:
                             row.append(0)
                     tile.append(row)
@@ -357,7 +358,7 @@ class MonsterPaletteObject(TableObject):
     def successor(self):
         return MonsterPaletteObject.get(self.index + 1)
 
-    @property
+    @cached_property
     def rgb_palette(self):
         multiplier = 0xff / 0x1f
         rgbs = []
@@ -377,12 +378,23 @@ class MonsterPaletteObject(TableObject):
 
     def compare_palette(self, palette, is_8color):
         if is_8color:
-            pal = palette[:24]
+            max_index = 23
         else:
-            pal = palette[:48]
-        return pal == [v for vs in self.rgb_palette for v in vs][:len(pal)]
+            max_index = 47
+
+        index = 0
+        for vs in self.rgb_palette:
+            for v in vs:
+                if v != palette[index]:
+                    return False
+                if index >= max_index:
+                    return True
+                index += 1
 
     def set_from_rgb(self, rgb_palette, is_8color):
+        if 'rgb_palette' in self._property_cache:
+            del(self._property_cache['rgb_palette'])
+
         multiplier = 0x1f / 0xff
         rgb_palette = rgb_palette[:48]
         zipped = zip(rgb_palette[0::3],
@@ -409,8 +421,14 @@ class MonsterPaletteObject(TableObject):
 
     @classmethod
     def get_free(cls):
-        for mpo in MonsterPaletteObject.every:
+        if not hasattr(MonsterPaletteObject, 'last_index'):
+            MonsterPaletteObject.last_index = -1
+        index = MonsterPaletteObject.last_index
+        while True:
+            index += 1
+            mpo = MonsterPaletteObject.get(index)
             if mpo not in MonsterPaletteObject.new_palettes:
+                MonsterPaletteObject.last_index = mpo.index
                 MonsterPaletteObject.new_palettes.append(mpo)
                 return mpo
 
@@ -489,6 +507,5 @@ if __name__ == '__main__':
         finish_interface()
 
     except Exception:
-        print_exc()
-        print('ERROR:', exc_info()[1])
+        print(traceback.format_exc())
         input('Press Enter to close this program. ')
