@@ -19,7 +19,7 @@ VERSION = 1
 ALL_OBJECTS = None
 
 
-def sort_func(c):
+def sig_func(c):
     s = '%s%s' % (c.filename, get_seed())
     return (md5(s.encode()).hexdigest(), c.filename)
 
@@ -257,7 +257,12 @@ class MonsterSpriteObject(TableObject):
 
     @property
     def width_tiles(self):
-        width = max([bin(s)[2:].rfind('1') for s in self.stencil])
+        if self.is_big:
+            def measure(s):
+                return bin((s >> 8) | ((s & 0xff) << 8))[2:].rfind('1')
+            width = max([measure(s) for s in self.stencil])
+        else:
+            width = max([bin(s)[2:].rfind('1') for s in self.stencil])
         return width + 1
 
     @property
@@ -274,7 +279,7 @@ class MonsterSpriteObject(TableObject):
         while True:
             if n >= self.width_tiles:
                 return max(n, 4)
-            n *= 2
+            n += 4
 
     @cached_property
     def max_height_tiles(self):
@@ -282,7 +287,7 @@ class MonsterSpriteObject(TableObject):
         while True:
             if n >= self.height_tiles:
                 return max(n, 4)
-            n *= 2
+            n += 4
 
     def get_size_compatibility(self, image):
         if not hasattr(self, '_image_scores'):
@@ -323,6 +328,9 @@ class MonsterSpriteObject(TableObject):
         if not candidates:
             print('INFO: No more suitable images for sprite %x' % self.index)
             return
+
+        def sort_func(c):
+            return self.get_size_compatibility(c), sig_func(c)
 
         candidates = sorted(candidates, key=sort_func)
         max_index = len(candidates)-1
