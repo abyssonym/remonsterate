@@ -274,7 +274,7 @@ class MonsterSpriteObject(TableObject):
         n = 1
         while True:
             if n >= self.width_tiles:
-                return n
+                return max(n, 4)
             n *= 2
 
     @cached_property
@@ -282,7 +282,7 @@ class MonsterSpriteObject(TableObject):
         n = 1
         while True:
             if n >= self.height_tiles:
-                return n
+                return max(n, 4)
             n *= 2
 
     def get_size_compatibility(self, image):
@@ -322,11 +322,13 @@ class MonsterSpriteObject(TableObject):
                       ]
 
         if not candidates:
+            print('INFO: No more suitable images for sprite %x' % self.index)
             return
 
         candidates = sorted(candidates, key=sort_func)
         max_index = len(candidates)-1
-        index = random.randint(random.randint(0, max_index), max_index)
+        index = random.randint(
+            random.randint(random.randint(0, max_index), max_index), max_index)
         chosen = candidates[index]
         self.DONE_IMAGES.append(chosen.filename)
         result = self.load_image(chosen)
