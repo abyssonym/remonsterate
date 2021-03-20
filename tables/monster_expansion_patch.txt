@@ -25,6 +25,20 @@
 :       0a 0a 0a 0a
 :       6b
 
+# coliseum prebattle view
+03af9e: 22 10 80 f1
+:       ea ea ea ea
+:       ea ea ea ea
+318010: 06 f9
+:       26 fb
+:       06 f9
+:       26 fb
+:       06 f9
+:       26 fb
+:       06 f9
+:       26 fb
+:       6b
+
 # reads from palette bank
 012349: bf 00 40 f1
 01d67c: bf 00 40 f1
