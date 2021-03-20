@@ -663,10 +663,11 @@ class MonsterComp16Object(MonsterCompMixin):
             pointer = MonsterComp16Object.new_base_address & 0xffff
             f.write(pointer.to_bytes(2, byteorder='little'))
 
-        self.pointer = MonsterComp16Object.new_base_address + (
-            self.index * len(self.stencil))
-        assert (MonsterComp16Object.new_base_address <= self.pointer
-                < addresses.new_monster_graphics - len(self.stencil))
+        if self.new_index >= 0:
+            self.pointer = MonsterComp16Object.new_base_address + (
+                self.new_index * len(self.stencil) * 2)
+            assert (MonsterComp16Object.new_base_address <= self.pointer
+                    < addresses.new_monster_graphics - len(self.stencil))
 
         super().write_data(filename)
 
