@@ -14,4 +14,22 @@
 03afd3: a9 f1
 03affd: a9 f1
 
+# new stuff by abyssonym
+0120ed: 22 00 80 f1
+:       ea ea
+012104: ea
+012561: 22 00 80 f1
+:       ea ea
+012572: ea
+318000: ad a8 81
+:       0a 0a 0a 0a
+:       6b
+
+# reads from palette bank
+012349: bf 00 40 f1
+01d67c: bf 00 40 f1
+02fa75: bf 00 40 f1
+02fa8c: bf 00 40 f1
+03b171: bf 00 40 f1
+
 3fffff: 00

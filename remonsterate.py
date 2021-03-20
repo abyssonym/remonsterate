@@ -1,18 +1,17 @@
 from randomtools.tablereader import (
-    TableObject, get_global_label, tblpath, addresses, get_random_degree,
-    get_activated_patches, mutate_normal, shuffle_normal, write_patch)
+    set_table_specs, set_global_output_filename, sort_good_order,
+    get_open_file, TableObject, tblpath, addresses, write_patch)
 from randomtools.utils import (
-    classproperty, cached_property, get_snes_palette_transformer,
-    read_multi, write_multi, utilrandom as random)
+    classproperty, cached_property, utilrandom as random)
 from randomtools.interface import (
-    get_outfile, get_seed, get_flags, get_activated_codes, activate_code,
-    run_interface, rewrite_snes_meta, clean_and_write, finish_interface)
-from collections import defaultdict
+    get_outfile, set_seed, get_seed, run_interface, clean_and_write,
+    finish_interface)
 from os import path
-from time import time, sleep, gmtime
 from collections import Counter
-from itertools import combinations
-from sys import argv, exc_info
+from hashlib import md5
+from sys import argv
+from PIL import Image
+from math import ceil
 import traceback
 
 
@@ -20,11 +19,52 @@ VERSION = 1
 ALL_OBJECTS = None
 
 
-class MouldObject(TableObject): pass
+def sort_func(c):
+    s = '%s%s' % (c.filename, get_seed())
+    return (md5(s.encode()).hexdigest(), c.filename)
+
+
+class MouldObject(TableObject):
+    # Moulds are templates for what enemy sizes are allowed
+    # in an enemy formation. Enemies are generally 4, 8, 12, or 16
+    # tiles in a given length/width. Note also that only 256 tiles
+    # is the maximum for any mould.
+
+    def read_data(self, filename, pointer):
+        super().read_data(filename, pointer)
+
+    @property
+    def successor(self):
+        try:
+            return MouldObject.get(self.index+1)
+        except KeyError:
+            return None
+
+    def read_dimensions(self):
+        if self.successor is None:
+            end_pointer = addresses.moulds_end | 0x20000
+        else:
+            end_pointer = self.successor.mould_pointer | 0x20000
+
+        pointer = self.mould_pointer | 0x20000
+        f = get_open_file(self.filename)
+        dimensions = []
+        while pointer < end_pointer:
+            f.seek(pointer)
+            data = f.read(4)
+            dimensions.append((int(data[2]), int(data[3])))
+            pointer += 4
+        return dimensions
+
+
 class FormationObject(TableObject): pass
 
 
 class MonsterSpriteObject(TableObject):
+    #PROTECTED_INDEXES = [0x106]
+    PROTECTED_INDEXES = []
+    DONE_IMAGES = []
+
     @property
     def is_8color(self):
         return bool(self.misc_sprite_pointer & 0x8000)
@@ -62,8 +102,24 @@ class MonsterSpriteObject(TableObject):
     def num_tiles(self):
         return sum([bin(v).count('1') for v in self.stencil])
 
+    @property
+    def is_unseen(self):
+        if (self.old_data['misc_sprite_pointer'] & 0x7fff == 0
+                and self.index != 0):
+            return True
+        return False
+
+    @property
+    def is_protected(self):
+        if self.index in self.PROTECTED_INDEXES:
+            return True
+        if self.is_unseen:
+            return True
+        return False
+
     def deinterleave_tile(self, tile):
         rows = []
+        old_bitcount = sum([bin(v).count('1') for v in tile])
         for i in range(8):
             if self.is_8color:
                 interleaved = (tile[i*2], tile[(i*2)+1],
@@ -89,6 +145,8 @@ class MonsterSpriteObject(TableObject):
 
         assert len(rows) == 8
         #assert self.interleave_tile(rows) == tile
+        new_bitcount = sum([bin(v).count('1') for vs in rows for v in vs])
+        assert old_bitcount == new_bitcount
         return rows
 
     def interleave_tile(self, old_tile):
@@ -97,6 +155,7 @@ class MonsterSpriteObject(TableObject):
         else:
             new_tile = [0]*32
 
+        old_bitcount = sum([bin(v).count('1') for vs in old_tile for v in vs])
         assert len(old_tile) == 8
         for (j, old_row) in enumerate(old_tile):
             assert len(old_row) == 8
@@ -115,6 +174,9 @@ class MonsterSpriteObject(TableObject):
                     new_tile[(j*2)+16] |= (c << i)
                     new_tile[(j*2)+17] |= (d << i)
 
+        new_bitcount = sum([bin(v).count('1') for v in new_tile])
+
+        assert old_bitcount == new_bitcount
         assert self.deinterleave_tile(new_tile) == old_tile
         return bytes(new_tile)
 
@@ -128,12 +190,11 @@ class MonsterSpriteObject(TableObject):
         else:
             numbytes = 32
 
-        f = open(get_outfile(), 'r+b')
+        f = get_open_file(self.filename)
         tiles = []
         for i in range(self.num_tiles):
             f.seek(self.sprite_pointer + (numbytes*i))
             tiles.append(self.deinterleave_tile(f.read(numbytes)))
-        f.close()
 
         self._tiles = tiles
         return self.tiles
@@ -195,10 +256,119 @@ class MonsterSpriteObject(TableObject):
         self._image = im
         return self.image
 
+    @property
+    def width_tiles(self):
+        width = max([bin(s)[2:].rfind('1') for s in self.stencil])
+        return width + 1
+
+    @property
+    def height_tiles(self):
+        height = 0
+        for i, s in enumerate(self.stencil):
+            if s:
+                height = i
+        return height + 1
+
+    @cached_property
+    def max_width_tiles(self):
+        n = 1
+        while True:
+            if n >= self.width_tiles:
+                return n
+            n *= 2
+
+    @cached_property
+    def max_height_tiles(self):
+        n = 1
+        while True:
+            if n >= self.height_tiles:
+                return n
+            n *= 2
+
+    def get_size_compatibility(self, image):
+        if not hasattr(self, '_image_scores'):
+            self._image_scores = {}
+
+        if image.filename in self._image_scores:
+            return self._image_scores[image.filename]
+
+        if isinstance(image, str):
+            image = Image.open(image)
+
+        width = ceil(image.width / 8)
+        height = ceil(image.height / 8)
+        image.close()
+
+        if width > self.max_width_tiles or height > self.max_height_tiles:
+            return None
+
+        a, b = max(width, self.width_tiles), min(width, self.width_tiles)
+        width_score = b / a
+        a, b = max(height, self.height_tiles), min(height, self.height_tiles)
+        height_score = b / a
+
+        score = width_score * height_score
+        self._image_scores[image.filename] = score
+
+        return self.get_size_compatibility(image)
+
+    def select_image(self, images):
+        if self.is_protected:
+            return
+
+        candidates = [i for i in images if
+                      i.filename not in self.DONE_IMAGES and
+                      self.get_size_compatibility(i) is not None
+                      ]
+
+        if not candidates:
+            return
+
+        candidates = sorted(candidates, key=sort_func)
+        max_index = len(candidates)-1
+        index = random.randint(random.randint(0, max_index), max_index)
+        chosen = candidates[index]
+        self.DONE_IMAGES.append(chosen.filename)
+        result = self.load_image(chosen)
+        if not result:
+            self.select_image(candidates)
+
+    def remap_palette(self, data, rgb_palette):
+        zipped = zip(rgb_palette[0::3],
+                     rgb_palette[1::3],
+                     rgb_palette[2::3])
+        pal = enumerate(zipped)
+        pal = sorted(pal, key=lambda x: (x[1], x[0]))
+        old_vals = set(data)
+        assert all([0 <= v <= 0xf for v in old_vals])
+        new_palette = []
+        for new, (old, components) in enumerate(pal):
+            if new == 0:
+                assert new == old
+                assert components == (0, 0, 0)
+            data = data.replace(bytes([old]), bytes([new | 0x80]))
+            new_palette.append(components)
+        for value in set(data):
+            data = data.replace(bytes([value]), bytes([value & 0x7f]))
+        new_palette = [v for vs in new_palette for v in vs]
+        new_vals = set(data)
+        assert len(old_vals) == len(new_vals)
+        assert all([0 <= v <= 0xf for v in new_vals])
+        assert set(rgb_palette) == set(new_palette)
+        return data, new_palette
+
     def load_image(self, image, transparency=None):
+        if isinstance(image, str):
+            image = Image.open(image)
+        if hasattr(image, 'filename') and image.fp is None:
+            image = Image.open(image.filename)
+        if image.mode != 'P':
+            filename = image.filename
+            image = image.convert(mode='P')
+            image.filename = filename
+
         self._image = image
         assert self.image == image
-        assert self.image.mode == 'P'
 
         width, height = image.size
         assert width <= 128
@@ -211,7 +381,10 @@ class MonsterSpriteObject(TableObject):
         assert self.is_big == is_big
 
         palette_indexes = set(image.tobytes())
-        assert max(palette_indexes) <= 0xf
+        if max(palette_indexes) > 0xf:
+            print('INFO: %s has too many colors.' % image.filename)
+            return False
+
         is_8color = max(palette_indexes) <= 7
         if (len(palette_indexes) <= 8 and not is_8color
                 and hasattr(image, 'filename')):
@@ -242,10 +415,11 @@ class MonsterSpriteObject(TableObject):
             assert len(temp) == 3
             palette[index:index+3] = palette[0:3]
             palette[0:3] = temp
-        #palette[0:3] = [0, 0, 0]
+        palette[0:3] = [0, 0, 0]
+        num_colors = 8 if self.is_8color else 16
         self.image.putpalette(palette)
-        self._palette = palette[:3*16]
-        assert self.palette == palette[:3*16]
+        self._palette = palette[:3*num_colors]
+        assert self.palette == palette[:3*num_colors]
 
         blank_tile = [[0]*8]*8
         new_tiles = []
@@ -256,6 +430,7 @@ class MonsterSpriteObject(TableObject):
             num_tiles_width = 8
 
         data = self.image.tobytes()
+        data, self._palette = self.remap_palette(data, self.palette)
         for jj in range(num_tiles_width):
             stencil_value = 0
             for ii in range(num_tiles_width):
@@ -265,6 +440,9 @@ class MonsterSpriteObject(TableObject):
                     y = (jj*8) + j
                     for i in range(8):
                         x = (ii*8) + i
+                        if x >= self.image.width:
+                            row.append(0)
+                            continue
                         try:
                             row.append(int(data[(y*self.image.width) + x]))
                         except IndexError:
@@ -282,16 +460,13 @@ class MonsterSpriteObject(TableObject):
         self._tiles = new_tiles
         self._stencil = stencil
 
+        return True
+
     def write_data(self, filename):
         self.image
 
-        for mpo in MonsterPaletteObject.new_palettes:
-            if mpo.compare_palette(self.palette, is_8color=self.is_8color):
-                chosen_palette = mpo
-                break
-        else:
-            chosen_palette = MonsterPaletteObject.get_free()
-            chosen_palette.set_from_rgb(self.palette, is_8color=self.is_8color)
+        chosen_palette = MonsterPaletteObject.get_free()
+        chosen_palette.set_from_rgb(self.palette, is_8color=self.is_8color)
 
         self.misc_palette_index &= 0xFC
         self.misc_palette_index |= (chosen_palette.index >> 8)
@@ -321,18 +496,27 @@ class MonsterSpriteObject(TableObject):
                 self.misc_sprite_pointer = mso.misc_sprite_pointer
                 break
         else:
+            DIVISION_FACTOR = 16
+            remainder = MonsterSpriteObject.free_space % DIVISION_FACTOR
+            if remainder:
+                MonsterSpriteObject.free_space += (DIVISION_FACTOR - remainder)
+            assert not MonsterSpriteObject.free_space % DIVISION_FACTOR
+
             pointer = (MonsterSpriteObject.free_space -
                        addresses.new_monster_graphics)
-            pointer //= 8
+            pointer //= DIVISION_FACTOR
             assert 0 <= pointer <= 0x7fff
 
             self.misc_sprite_pointer &= 0x8000
             self.misc_sprite_pointer |= pointer
-            check = (((self.misc_sprite_pointer & 0x7FFF) * 8)
+            check = (((self.misc_sprite_pointer & 0x7FFF) * DIVISION_FACTOR)
                      + addresses.new_monster_graphics)
             assert check == MonsterSpriteObject.free_space
+            remainder = MonsterSpriteObject.free_space % DIVISION_FACTOR
+            if remainder:
+                MonsterSpriteObject.free_space += (DIVISION_FACTOR - remainder)
 
-            f = open(filename, 'r+b')
+            f = get_open_file(filename)
             f.seek(MonsterSpriteObject.free_space)
             data = bytes([v for tile in self.tiles
                           for v in self.interleave_tile(tile)])
@@ -344,7 +528,6 @@ class MonsterSpriteObject(TableObject):
                 MonsterSpriteObject.free_space += (len(self.tiles) * 32)
 
             assert f.tell() == MonsterSpriteObject.free_space
-            f.close()
 
         super().write_data(filename)
         self.written = True
@@ -432,6 +615,13 @@ class MonsterPaletteObject(TableObject):
                 MonsterPaletteObject.new_palettes.append(mpo)
                 return mpo
 
+    def write_data(self, filename):
+        if (self.index < addresses.previous_max_palettes
+                or self in self.new_palettes):
+            new_pointer = (addresses.new_palette_pointer
+                           + (self.index * len(self.colors) * 2))
+            super().write_data(filename, pointer=new_pointer)
+
 
 class MonsterCompMixin(TableObject):
     @property
@@ -463,14 +653,13 @@ class MonsterComp16Object(MonsterCompMixin):
             MonsterComp16Object.new_base_address = max(
                 [mc8.pointer for mc8 in MonsterComp8Object.every]) + 8
 
-            f = open(filename, 'r+b')
+            f = get_open_file(filename)
             f.seek(addresses.new_comp8_pointer)
             pointer = MonsterComp8Object.get(0).pointer & 0xffff
             f.write(pointer.to_bytes(2, byteorder='little'))
             f.seek(addresses.new_comp16_pointer)
             pointer = MonsterComp16Object.new_base_address & 0xffff
             f.write(pointer.to_bytes(2, byteorder='little'))
-            f.close()
 
         self.pointer = MonsterComp16Object.new_base_address + (
             self.index * len(self.stencil))
@@ -481,10 +670,36 @@ class MonsterComp16Object(MonsterCompMixin):
 
 
 def nuke():
-    f = open(get_outfile(), 'r+b')
+    f = get_open_file(get_outfile())
     f.seek(addresses.monster_graphics)
     f.write(b'\x00' * (addresses.end_monster_graphics -
                        addresses.monster_graphics))
+
+
+def begin_remonster(outfile, seed):
+    global ALL_OBJECTS
+    set_seed(seed)
+    random.seed(seed)
+    set_global_output_filename(outfile)
+    set_table_specs('tables_list.txt')
+
+    ALL_OBJECTS = sort_good_order(
+        [g for g in globals().values()
+         if isinstance(g, type) and issubclass(g, TableObject)
+         and g not in [TableObject]])
+
+    for o in ALL_OBJECTS:
+        o.every
+    for o in ALL_OBJECTS:
+        o.ranked
+
+    write_patch(outfile, 'monster_expansion_patch.txt')
+
+
+def finish_remonster():
+    print(get_seed())
+    for o in ALL_OBJECTS:
+        o.write_all(o.get(0).filename)
 
 
 if __name__ == '__main__':
@@ -500,7 +715,10 @@ if __name__ == '__main__':
         run_interface(ALL_OBJECTS, snes=False, custom_degree=False)
 
         for mso in MonsterSpriteObject.every:
-            mso.load_image(mso.image)
+            mso.image
+
+        mso = MonsterSpriteObject.get(0x5d)
+        mso.load_image('./sprites/monster_sprites_1/32x32/scorpios.png')
         nuke()
 
         clean_and_write(ALL_OBJECTS)
