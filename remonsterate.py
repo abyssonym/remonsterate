@@ -61,8 +61,7 @@ class FormationObject(TableObject): pass
 
 
 class MonsterSpriteObject(TableObject):
-    #PROTECTED_INDEXES = [0x106]
-    PROTECTED_INDEXES = []
+    PROTECTED_INDEXES = [0x106] + list(range(0x180, 0x1a0))
     DONE_IMAGES = []
 
     @property
@@ -695,6 +694,9 @@ def begin_remonster(outfile, seed):
         o.every
     for o in ALL_OBJECTS:
         o.ranked
+
+    for index in MonsterSpriteObject.PROTECTED_INDEXES:
+        MonsterSpriteObject.get(index).image
 
     write_patch(outfile, 'monster_expansion_patch.txt')
 
