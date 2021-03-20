@@ -1,6 +1,6 @@
 from randomtools.tablereader import (
     set_table_specs, set_global_output_filename, sort_good_order,
-    get_open_file, TableObject, tblpath, addresses, write_patch)
+    get_open_file, close_file, TableObject, tblpath, addresses, write_patch)
 from randomtools.utils import (
     classproperty, cached_property, utilrandom as random)
 from randomtools.interface import (
@@ -22,6 +22,12 @@ ALL_OBJECTS = None
 def sig_func(c):
     s = '%s%s' % (c.filename, get_seed())
     return (md5(s.encode()).hexdigest(), c.filename)
+
+
+def reseed(s):
+    s = '%s%s' % (get_seed(), s)
+    value = int(md5(s.encode('ascii')).hexdigest(), 0x10)
+    random.seed(value)
 
 
 class MouldObject(TableObject):
@@ -316,14 +322,25 @@ class MonsterSpriteObject(TableObject):
 
         return self.get_size_compatibility(image)
 
-    def select_image(self, images):
+    def select_image(self, images=None):
         if self.is_protected:
             return
+
+        if images is None:
+            images = MonsterSpriteObject.import_images
 
         candidates = [i for i in images if
                       i.filename not in self.DONE_IMAGES and
                       self.get_size_compatibility(i) is not None
                       ]
+
+        if hasattr(self, 'whitelist') and self.whitelist:
+            candidates = [c for c in candidates
+                          if hasattr(c, 'tags') and c.tags & self.whitelist]
+
+        if hasattr(self, 'blacklist') and self.blacklist:
+            candidates = [c for c in candidates if not
+                          (hasattr(c, 'tags') and c.tags & self.blacklist)]
 
         if not candidates:
             print('INFO: No more suitable images for sprite %x' % self.index)
@@ -710,9 +727,52 @@ def begin_remonster(outfile, seed):
 
 
 def finish_remonster():
-    print(get_seed())
     for o in ALL_OBJECTS:
         o.write_all(o.get(0).filename)
+    close_file(MonsterSpriteObject.get(0).filename)
+
+
+def remonsterate(outfile, seed, images_tags_filename,
+                 monsters_tags_filename=None):
+    begin_remonster(outfile, seed)
+
+    images = []
+    for line in open(images_tags_filename):
+        line = line.strip()
+        if ':' in line:
+            image_filename, tags = line.split(':')
+            tags = tags.split(',')
+            tags = {t for t in tags if t.strip()}
+        else:
+            image_filename, tags = line, set([])
+        image = Image.open(image_filename)
+        image.tags = tags
+        image.close()
+        images.append(image)
+
+    if monsters_tags_filename is not None:
+        for line in open(monsters_tags_filename):
+            line = line.strip()
+            if ':' not in line:
+                continue
+            index, tags = line.split(':')
+            index = int(index, 0x10)
+            tags = tags.split(',')
+            tags = {t for t in tags if t.strip()}
+            whitelist = {t for t in tags if not t.startswith('!')}
+            blacklist = {t[1:] for t in tags if t.startswith('!')}
+            MonsterSpriteObject.get(index).whitelist = whitelist
+            MonsterSpriteObject.get(index).blacklist = blacklist
+
+    MonsterSpriteObject.import_images = sorted(images,
+                                               key=lambda i: i.filename)
+
+    msos = list(MonsterSpriteObject.every)
+    random.shuffle(msos)
+    for mso in msos:
+        mso.select_image()
+
+    finish_remonster()
 
 
 if __name__ == '__main__':
