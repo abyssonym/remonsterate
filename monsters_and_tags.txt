@@ -1,11 +1,15 @@
 # This is a sample monster list file.
 # This list is used to whitelist or blacklist specific tags for each monster.
-# An exclamation point (!) indicates a blacklisted flag.
 # It is not necessary to list every monster in the game.
+#
+# The format is: monster_index:white_tag1,white_tag2,!black_tag1,!black_tag2
+#   The monster index is in hexadecimal.
+#   An exclamation point (!) denotes a blacklisted flag.
+#
 # If any tags are whitelisted, that monster can ONLY use sprites with
 #   ALL of those tags.
 # If a tag is blacklisted, that monster cannot use ANY sprites with that tag.
-# These tags only work when using remonsterate's default randomization functions.
+# These tags only work when using the default randomization functions.
 #
 # Examples:
 # 0:humanoid,!female            # Narshe Guard
