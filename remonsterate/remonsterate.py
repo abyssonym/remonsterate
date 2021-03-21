@@ -1,18 +1,12 @@
 from .randomtools.tablereader import (
     set_table_specs, set_global_output_filename, sort_good_order,
-    get_open_file, close_file, TableObject, tblpath, addresses, write_patch)
-from .randomtools.utils import (
-    classproperty, cached_property, utilrandom as random)
-from .randomtools.interface import (
-    get_outfile, set_seed, get_seed, run_interface, clean_and_write,
-    finish_interface)
-from os import path
+    get_open_file, close_file, TableObject, addresses, write_patch)
+from .randomtools.utils import cached_property, utilrandom as random
+from .randomtools.interface import get_outfile, set_seed, get_seed
 from collections import Counter
 from hashlib import md5
-from sys import argv
 from PIL import Image
 from math import ceil
-import traceback
 
 
 VERSION = 1
@@ -248,7 +242,6 @@ class MonsterSpriteObject(TableObject):
         if hasattr(self, '_image'):
             return self._image
 
-        from PIL import Image
         if self.is_big:
             width = 16*8
         else:
@@ -734,6 +727,7 @@ def finish_remonster():
 
 def remonsterate(outfile, seed, images_tags_filename,
                  monsters_tags_filename=None):
+    seed = int(seed)
     begin_remonster(outfile, seed)
 
     images = []
@@ -773,30 +767,3 @@ def remonsterate(outfile, seed, images_tags_filename,
         mso.select_image()
 
     finish_remonster()
-
-
-if __name__ == '__main__':
-    try:
-        print ('You are using the FF6 Remonsterator '
-               'version %s.' % VERSION)
-        print
-
-        ALL_OBJECTS = [g for g in globals().values()
-                       if isinstance(g, type) and issubclass(g, TableObject)
-                       and g not in [TableObject]]
-
-        run_interface(ALL_OBJECTS, snes=False, custom_degree=False)
-
-        for mso in MonsterSpriteObject.every:
-            mso.image
-
-        mso = MonsterSpriteObject.get(0x5d)
-        mso.load_image('./sprites/monster_sprites_1/32x32/scorpios.png')
-        nuke()
-
-        clean_and_write(ALL_OBJECTS)
-        finish_interface()
-
-    except Exception:
-        print(traceback.format_exc())
-        input('Press Enter to close this program. ')
