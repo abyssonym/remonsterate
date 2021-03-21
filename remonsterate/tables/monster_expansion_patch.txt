@@ -1,35 +1,35 @@
 # monster graphics relocation patch created by madsiur
 
 012114: 69 00
-01211a: 69 f2
+01211a: 69 f8
 
-03af8d: a9 f2
+03af8d: a9 f8
 03af93: a9 00 00
 
-01217a: 6f 20 a8 f1
-012184: bf 00 00 f1
-0121a0: 6f 22 a8 f1
-0121aa: bf 00 00 f1
+01217a: 6f 20 a8 ff
+012184: bf 00 00 ff
+0121a0: 6f 22 a8 ff
+0121aa: bf 00 00 ff
 
-03afd3: a9 f1
-03affd: a9 f1
+03afd3: a9 ff
+03affd: a9 ff
 
 # new stuff by abyssonym
-0120ed: 22 00 80 f1
+0120ed: 22 00 f8 ff
 :       ea ea
 012104: ea
-012561: 22 00 80 f1
+012561: 22 00 f8 ff
 :       ea ea
 012572: ea
-318000: ad a8 81
+3ff800: ad a8 81
 :       0a 0a 0a 0a
 :       6b
 
 # coliseum prebattle view
-03af9e: 22 10 80 f1
+03af9e: 22 10 f8 ff
 :       ea ea ea ea
 :       ea ea ea ea
-318010: 06 f9
+3ff810: 06 f9
 :       26 fb
 :       06 f9
 :       26 fb
@@ -40,10 +40,10 @@
 :       6b
 
 # reads from palette bank
-012349: bf 00 40 f1
-01d67c: bf 00 40 f1
-02fa75: bf 00 40 f1
-02fa8c: bf 00 40 f1
-03b171: bf 00 40 f1
+012349: bf 00 c0 ff
+01d67c: bf 00 c0 ff
+02fa75: bf 00 c0 ff
+02fa8c: bf 00 c0 ff
+03b171: bf 00 c0 ff
 
 3fffff: 00

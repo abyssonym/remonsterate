@@ -547,6 +547,7 @@ class MonsterSpriteObject(TableObject):
                 MonsterSpriteObject.free_space += (len(self.tiles) * 32)
 
             assert f.tell() == MonsterSpriteObject.free_space
+            assert MonsterSpriteObject.free_space < addresses.new_comp8_pointer
 
         super().write_data(filename)
         self.written = True
@@ -639,6 +640,8 @@ class MonsterPaletteObject(TableObject):
                 or self in self.new_palettes):
             new_pointer = (addresses.new_palette_pointer
                            + (self.index * len(self.colors) * 2))
+            assert (new_pointer + (len(self.colors)*2)
+                        < addresses.new_code_pointer)
             super().write_data(filename, pointer=new_pointer)
 
 
@@ -657,7 +660,7 @@ class MonsterComp8Object(MonsterCompMixin):
             self.pointer = addresses.new_comp8_pointer + 4 + (
                 self.new_index * len(self.stencil))
             assert (addresses.new_comp8_pointer + 4 <= self.pointer
-                    < addresses.new_monster_graphics - len(self.stencil))
+                    < addresses.new_palette_pointer - len(self.stencil))
         super().write_data(filename)
         self.written = True
 
@@ -684,7 +687,7 @@ class MonsterComp16Object(MonsterCompMixin):
             self.pointer = MonsterComp16Object.new_base_address + (
                 self.new_index * len(self.stencil) * 2)
             assert (MonsterComp16Object.new_base_address <= self.pointer
-                    < addresses.new_monster_graphics - len(self.stencil))
+                    < addresses.new_palette_pointer - len(self.stencil))
 
         super().write_data(filename)
 
