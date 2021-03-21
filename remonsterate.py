@@ -1,9 +1,9 @@
-from randomtools.tablereader import (
+from .randomtools.tablereader import (
     set_table_specs, set_global_output_filename, sort_good_order,
     get_open_file, close_file, TableObject, tblpath, addresses, write_patch)
-from randomtools.utils import (
+from .randomtools.utils import (
     classproperty, cached_property, utilrandom as random)
-from randomtools.interface import (
+from .randomtools.interface import (
     get_outfile, set_seed, get_seed, run_interface, clean_and_write,
     finish_interface)
 from os import path
