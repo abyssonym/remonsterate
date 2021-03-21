@@ -329,7 +329,7 @@ class MonsterSpriteObject(TableObject):
 
         if hasattr(self, 'whitelist') and self.whitelist:
             candidates = [c for c in candidates
-                          if hasattr(c, 'tags') and c.tags & self.whitelist]
+                          if hasattr(c, 'tags') and c.tags >= self.whitelist]
 
         if hasattr(self, 'blacklist') and self.blacklist:
             candidates = [c for c in candidates if not

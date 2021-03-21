@@ -1,0 +1,15 @@
+# This is a sample monster list file.
+# This list is used to whitelist or blacklist specific tags for each monster.
+# An exclamation point (!) indicates a blacklisted flag.
+# It is not necessary to list every monster in the game.
+# If any tags are whitelisted, that monster can ONLY use sprites with
+#   ALL of those tags.
+# If a tag is blacklisted, that monster cannot use ANY sprites with that tag.
+# These tags only work when using remonsterate's default randomization functions.
+#
+# Examples:
+# 0:humanoid,!female            # Narshe Guard
+# 53:town,large,!boss           # HadesGigas
+# 5d:desert                     # Areneid
+# 128:humanoid,female,boss      # Goddess
+12a:false_kefka_do_not_replace

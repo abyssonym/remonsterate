@@ -1,0 +1,8 @@
+# This is a sample image list file.
+# This file contains the paths to every sprite that you wish to import randomly.
+# The format is: path/to/file.png:tag1,tag2,tag3
+# You can also omit the tags.
+#
+# Examples:
+# sprites/dragon.png:reptile,flying,kickass,boss
+# sprites/unicorn.png
