@@ -732,7 +732,11 @@ def remonsterate(outfile, seed, images_tags_filename,
 
     images = []
     for line in open(images_tags_filename):
+        if '#' in line:
+            line, comment = line.split('#', 1)
         line = line.strip()
+        if not line:
+            continue
         if ':' in line:
             image_filename, tags = line.split(':')
             tags = tags.split(',')
@@ -746,6 +750,8 @@ def remonsterate(outfile, seed, images_tags_filename,
 
     if monsters_tags_filename is not None:
         for line in open(monsters_tags_filename):
+            if '#' in line:
+                line, comment = line.split('#', 1)
             line = line.strip()
             if ':' not in line:
                 continue
