@@ -274,7 +274,7 @@ class MonsterSpriteObject(TableObject):
 
     @cached_property
     def max_width_tiles(self):
-        n = 1
+        n = 4
         while True:
             if n >= self.width_tiles:
                 return max(n, 4)
@@ -282,7 +282,7 @@ class MonsterSpriteObject(TableObject):
 
     @cached_property
     def max_height_tiles(self):
-        n = 1
+        n = 4
         while True:
             if n >= self.height_tiles:
                 return max(n, 4)
