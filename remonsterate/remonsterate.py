@@ -64,6 +64,12 @@ class MonsterSpriteObject(TableObject):
     PROTECTED_INDEXES = [0x106] + list(range(0x180, 0x1a0))
     DONE_IMAGES = []
 
+    def __repr__(self):
+        if hasattr(self, 'image') and hasattr(self.image, 'filename'):
+            return '{0:0>3X} {1}'.format(self.index, self.image.filename)
+        else:
+            return '{0:0>3X} ---'.format(self.index)
+
     @property
     def is_8color(self):
         return bool(self.misc_sprite_pointer & 0x8000)
@@ -726,6 +732,14 @@ def finish_remonster():
     for o in ALL_OBJECTS:
         o.write_all(o.get(0).filename)
     close_file(MonsterSpriteObject.get(0).filename)
+
+    seed = get_seed()
+    f = open('remonster.{0}.txt'.format(seed), 'w+')
+    f.write('ROM: {0}\n'.format(MonsterSpriteObject.get(0).filename))
+    f.write('Seed: {0}\n'.format(get_seed()))
+    for mso in MonsterSpriteObject.every:
+        f.write('{0}\n'.format(mso))
+    f.close()
 
 
 def remonsterate(outfile, seed, images_tags_filename,
