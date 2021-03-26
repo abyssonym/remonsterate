@@ -343,7 +343,7 @@ class MonsterSpriteObject(TableObject):
 
         if not candidates:
             print('INFO: No more suitable images for sprite %x' % self.index)
-            return
+            return False
 
         def sort_func(c):
             return self.get_size_compatibility(c), sig_func(c)
@@ -357,6 +357,7 @@ class MonsterSpriteObject(TableObject):
         result = self.load_image(chosen)
         if not result:
             self.select_image(candidates)
+        return True
 
     def remap_palette(self, data, rgb_palette):
         zipped = zip(rgb_palette[0::3],
@@ -787,6 +788,8 @@ def remonsterate(outfile, seed, images_tags_filename,
     msos = list(MonsterSpriteObject.every)
     random.shuffle(msos)
     for mso in msos:
-        mso.select_image()
+        result = mso.select_image()
+        if not result:
+            mso.load_image(mso.image)
 
     finish_remonster()
