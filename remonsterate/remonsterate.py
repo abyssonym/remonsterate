@@ -447,6 +447,30 @@ class MonsterSpriteObject(TableObject):
         self._palette = palette[:3*num_colors]
         assert self.palette == palette[:3*num_colors]
 
+        done_flag = False
+        while hasattr(self.image, 'filename'):
+            if done_flag:
+                break
+            for j in range(7,-1,-1):
+                if done_flag:
+                    break
+                for i in range(width):
+                    pixel = self.image.getpixel((i, j))
+                    if pixel:
+                        done_flag = True
+                        break
+            else:
+                if not done_flag:
+                    height = self.image.height
+                    if height <= 8:
+                        raise Exception('Fully transparent image not allowed.')
+                    image = self.image.crop(
+                        (0, 8, self.image.width, self.image.height))
+                    image.filename = self.image.filename
+                    self._image = image
+                    new_height = self.image.height
+                    assert height == new_height + 8
+
         blank_tile = [[0]*8]*8
         new_tiles = []
         stencil = []
