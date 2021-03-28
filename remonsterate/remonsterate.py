@@ -9,7 +9,7 @@ from PIL import Image
 from math import ceil
 
 
-VERSION = 3
+VERSION = 4
 ALL_OBJECTS = None
 
 
@@ -61,7 +61,8 @@ class FormationObject(TableObject): pass
 
 
 class MonsterSpriteObject(TableObject):
-    PROTECTED_INDEXES = [0x106] + list(range(0x180, 0x1a0))
+    SUPER_PROTECTED_INDEXES = [0x106]
+    PROTECTED_INDEXES = list(range(0x180, 0x1a0))
     DONE_IMAGES = []
 
     def __repr__(self):
@@ -125,8 +126,12 @@ class MonsterSpriteObject(TableObject):
         return False
 
     @property
+    def is_super_protected(self):
+        return self.index in self.SUPER_PROTECTED_INDEXES
+
+    @property
     def is_protected(self):
-        if self.index in self.PROTECTED_INDEXES:
+        if self.index in self.PROTECTED_INDEXES + self.SUPER_PROTECTED_INDEXES:
             return True
         if self.is_unseen:
             return True
@@ -400,6 +405,8 @@ class MonsterSpriteObject(TableObject):
         return data, new_palette
 
     def load_image(self, image, transparency=None):
+        if self.is_super_protected:
+            return
         if isinstance(image, str):
             image = Image.open(image)
         if hasattr(image, 'filename') and image.fp is None:
@@ -523,6 +530,7 @@ class MonsterSpriteObject(TableObject):
                 stencil_value = ((stencil_value >> 8) |
                                  ((stencil_value & 0xff) << 8))
             stencil.append(stencil_value)
+
         self._tiles = new_tiles
         self._stencil = stencil
 
