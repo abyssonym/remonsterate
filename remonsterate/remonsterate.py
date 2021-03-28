@@ -9,7 +9,7 @@ from PIL import Image
 from math import ceil
 
 
-VERSION = 2
+VERSION = 3
 ALL_OBJECTS = None
 
 
@@ -88,6 +88,10 @@ class MonsterSpriteObject(TableObject):
         return bool(self.misc_palette_index & 0x80)
 
     @property
+    def is_actually_big(self):
+        return self.width_tiles > 8 or self.height_tiles > 8
+
+    @property
     def palette(self):
         if hasattr(self, '_palette'):
             return self._palette
@@ -109,8 +113,14 @@ class MonsterSpriteObject(TableObject):
 
     @property
     def is_unseen(self):
-        if (self.old_data['misc_sprite_pointer'] & 0x7fff == 0
-                and self.index != 0):
+        if self.index <= 0xff:
+            return False
+        if self.old_data['misc_sprite_pointer'] & 0x7fff == 0:
+            return True
+        brachosaur = MonsterSpriteObject.get(0x26)
+        k = 'misc_sprite_pointer'
+        if (self.old_data[k] == brachosaur.old_data[k]
+                and 0x157 <= self.index <= 0x15f):
             return True
         return False
 
@@ -323,6 +333,7 @@ class MonsterSpriteObject(TableObject):
 
     def select_image(self, images=None):
         if self.is_protected:
+            self.load_image(self.image)
             return
 
         if images is None:
@@ -332,6 +343,10 @@ class MonsterSpriteObject(TableObject):
                       i.filename not in self.DONE_IMAGES and
                       self.get_size_compatibility(i) is not None
                       ]
+
+        if self.is_actually_big and random.random() > 0.1:
+            temp = [c for c in candidates if c.width > 64 or c.height > 64]
+            candidates = temp or candidates
 
         if hasattr(self, 'whitelist') and self.whitelist:
             candidates = [c for c in candidates
@@ -353,6 +368,7 @@ class MonsterSpriteObject(TableObject):
         index = random.randint(
             random.randint(random.randint(0, max_index), max_index), max_index)
         chosen = candidates[index]
+
         self.DONE_IMAGES.append(chosen.filename)
         result = self.load_image(chosen)
         if not result:
@@ -535,6 +551,7 @@ class MonsterSpriteObject(TableObject):
                 mco = MonsterComp8Object.create_new()
             mco.stencil = self.stencil
             self.stencil_index = mco.new_index
+        assert self.stencil_index <= 0xff
 
         if not hasattr(MonsterSpriteObject, 'free_space'):
             MonsterSpriteObject.free_space = addresses.new_monster_graphics
@@ -812,8 +829,6 @@ def remonsterate(outfile, seed, images_tags_filename,
     msos = list(MonsterSpriteObject.every)
     random.shuffle(msos)
     for mso in msos:
-        result = mso.select_image()
-        if not result:
-            mso.load_image(mso.image)
+        mso.select_image()
 
     finish_remonster()
