@@ -9,7 +9,7 @@ from PIL import Image
 from math import ceil
 
 
-VERSION = 4
+VERSION = 5
 ALL_OBJECTS = None
 
 
@@ -124,6 +124,18 @@ class MonsterSpriteObject(TableObject):
                 and 0x157 <= self.index <= 0x15f):
             return True
         return False
+
+    @cached_property
+    def pair_protected(self):
+        for index in self.SUPER_PROTECTED_INDEXES:
+            if index == self.index:
+                continue
+            other = MonsterSpriteObject.get(index)
+            k1, k2 = 'stencil_index', 'misc_sprite_pointer'
+            if (self.old_data[k1] == other.old_data[k1]
+                    and self.old_data[k2] == other.old_data[k2]):
+                return MonsterSpriteObject.get(index)
+        return None
 
     @property
     def is_super_protected(self):
@@ -548,11 +560,14 @@ class MonsterSpriteObject(TableObject):
         assert self.palette_index == chosen_palette.index
 
         for mso in MonsterSpriteObject.every:
+            if self.pair_protected:
+                break
             if (hasattr(mso, 'written') and mso.written
                     and mso.stencil == self.stencil):
                 self.stencil_index = mso.stencil_index
                 break
         else:
+            assert self.pair_protected is None
             if self.is_big:
                 mco = MonsterComp16Object.create_new()
             else:
@@ -565,12 +580,15 @@ class MonsterSpriteObject(TableObject):
             MonsterSpriteObject.free_space = addresses.new_monster_graphics
 
         for mso in MonsterSpriteObject.every:
+            if self.pair_protected:
+                break
             if (hasattr(mso, 'written') and mso.written
                     and mso.stencil == self.stencil
                     and mso.tiles == self.tiles):
                 self.misc_sprite_pointer = mso.misc_sprite_pointer
                 break
         else:
+            assert self.pair_protected is None
             DIVISION_FACTOR = 16
             remainder = MonsterSpriteObject.free_space % DIVISION_FACTOR
             if remainder:
@@ -604,6 +622,12 @@ class MonsterSpriteObject(TableObject):
 
             assert f.tell() == MonsterSpriteObject.free_space
             assert MonsterSpriteObject.free_space < addresses.new_comp8_pointer
+
+        if self.pair_protected is not None:
+            assert self.pair_protected.written
+            for attr in ['misc_sprite_pointer', 'stencil_index',
+                         'misc_palette_index', 'low_palette_index']:
+                setattr(self, attr, getattr(self.pair_protected, attr))
 
         super().write_data(filename)
         self.written = True
