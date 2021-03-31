@@ -26,9 +26,9 @@ class RemonstrateGUI(tkinter.Frame):
                 if str(file).endswith(".smc"):
                     self.rom_files.append(file)
                 elif str(file).endswith(".txt"):
-                    if "image" in str(file):
+                    if "images" in str(file):
                         self.image_files.append(file)
-                    elif "monster" in str(file):
+                    elif "monsters" in str(file):
                         self.monster_files.append(file)
 
         #Row 1: ROM File Information

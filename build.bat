@@ -1,0 +1,1 @@
+pyinstaller run.py -F -n Remonsterate --add-data remonsterate\randomtools;randomtools --add-data remonsterate\tables;tables

@@ -3,3 +3,7 @@
 .vs/slnx.sqlite
 remonsterate/__pycache__/remonsterate.cpython-39.pyc
 .vs/VSWorkspaceState.json
+build/*
+dist/*
+Remonsterate.spec
+__pycache__/run.cpython-39.pyc
