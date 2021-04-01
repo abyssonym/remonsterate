@@ -1,4 +1,4 @@
-import tkinter, os
+import tkinter, os, sys
 from tkinter import ttk
 from tkinter import messagebox
 from remonsterate.remonsterate import remonsterate
@@ -20,16 +20,30 @@ class RemonstrateGUI(tkinter.Frame):
         self.font = "Arial"
         self.font_size = 12
 
-        #Populate the file name lists
+        #Populate the file name lists. Iterates through directories starting at the
+        #   directory containing the exe file. Does not traverse directories past
+        #   the depth specified by walk_distance.
+        walk_distance = 2
+        exe_directory = os.path.abspath(".")
+        exe_directory_level = exe_directory.count(os.path.sep)
         for root, dirs, files in os.walk("."):
-            for file in files:
-                if str(file).endswith(".smc"):
-                    self.rom_files.append(file)
-                elif str(file).endswith(".txt"):
-                    if "images" in str(file):
-                        self.image_files.append(file)
-                    elif "monsters" in str(file):
-                        self.monster_files.append(file)
+            current_walking_directory = os.path.abspath(root)
+            current_directory_level = current_walking_directory.count(os.path.sep)
+            if current_directory_level > exe_directory_level + 2:
+                #del dirs[:] empties the list that os.walk uses to determine what
+                #   directories to walk through, meaning os.walk will move on to
+                #   the next directory. It does NOT delete or modify files on the
+                #   hard drive.
+                del dirs[:] 
+            else:
+                for file_name in files:
+                    if file_name.endswith(".smc"):
+                        self.rom_files.append(os.path.join(root, file_name))
+                    elif file_name.endswith(".txt"):
+                        if "images" in file_name:
+                            self.image_files.append(os.path.join(root, file_name))
+                        elif "monsters" in file_name:
+                            self.monster_files.append(os.path.join(root, file_name))
 
         #Row 1: ROM File Information
         widget = tkinter.Label(
