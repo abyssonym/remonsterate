@@ -1,4 +1,4 @@
-import tkinter, os, sys
+import tkinter, os
 from tkinter import ttk
 from tkinter import messagebox
 from remonsterate.remonsterate import remonsterate
