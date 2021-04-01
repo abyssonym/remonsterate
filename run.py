@@ -37,7 +37,7 @@ class RemonstrateGUI(tkinter.Frame):
                 del dirs[:] 
             else:
                 for file_name in files:
-                    if file_name.endswith(".smc"):
+                    if file_name.endswith(".smc") or file_name.endswith(".sfc"):
                         self.rom_files.append(os.path.join(root, file_name))
                     elif file_name.endswith(".txt"):
                         if "images" in file_name:
