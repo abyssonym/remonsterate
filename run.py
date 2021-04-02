@@ -21,16 +21,35 @@ class RemonstrateGUI(tkinter.Frame):
         self.font = 'Arial'
         self.font_size = 12
 
-        # Populate the file name lists
-        files = os.listdir('.')
-        for f in files:
-            if str(f).endswith('.smc') or str(f).endswith('.sfc'):
-                self.rom_files.append(f)
-            elif str(f).endswith('.txt'):
-                self.txt_files.append(f)
+        # Populate the file name lists. Iterates through directories starting
+        #   at the directory containing the exe file. Does not traverse
+        #   directories past the depth specified by walk_distance.
+        walk_distance = 2
+        exe_directory = os.path.abspath(".")
+        exe_directory_level = exe_directory.count(os.path.sep)
+        for root, dirs, files in os.walk("."):
+            current_walking_directory = os.path.abspath(root)
+            current_directory_level = current_walking_directory.count(
+                os.path.sep)
+            if current_directory_level > exe_directory_level + walk_distance:
+                # del dirs[:] empties the list that os.walk uses to determine
+                #   what directories to walk through, meaning os.walk will move
+                #   on to the next directory. It does NOT delete or modify
+                #   files on the hard drive.
+                del dirs[:]
+            else:
+                for filename in files:
+                    filepath = os.path.join(root, filename)
+                    f = filename.lower()
+                    if f.endswith(".smc") or f.endswith(".sfc"):
+                        self.rom_files.append(filepath)
+                    elif f.endswith(".txt"):
+                        self.txt_files.append(filepath)
 
         self.rom_files = sorted(set(self.rom_files), key=lambda f: f.lower())
-        self.txt_files = sorted(set(self.txt_files), key=lambda f: f.lower())
+        self.txt_files = sorted(
+            set(self.txt_files),
+            key=lambda f: (f.count(os.path.sep), f.lower()))
         self.image_files = [f for f in self.txt_files if 'images' in f.lower()]
         self.image_files += [f for f in self.txt_files
                              if f not in self.image_files]
