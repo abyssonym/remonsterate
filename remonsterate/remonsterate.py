@@ -807,9 +807,9 @@ def begin_remonster(outfile, seed, rom_type=None):
         table_list = determine_global_table(outfile)
 
     f = open(outfile, 'r+b')
-    f.seek(0x8000)
-    block = f.read(0x8000)
-    f.seek(0x408000)
+    f.seek(0)
+    block = f.read(0x10000)
+    f.seek(0x400000)
     f.write(block)
     f.close()
 
@@ -840,9 +840,20 @@ def begin_remonster(outfile, seed, rom_type=None):
 
 
 def finish_remonster():
+    outfile = MonsterSpriteObject.get(0).filename
     for o in ALL_OBJECTS:
-        o.write_all(o.get(0).filename)
-    close_file(MonsterSpriteObject.get(0).filename)
+        o.write_all(outfile)
+
+    close_file(outfile)
+
+    f = open(outfile, 'rb')
+    f.seek(0)
+    block1 = f.read(0x10000)
+    f.seek(0x400000)
+    block81 = f.read(0x10000)
+    f.close()
+
+    assert block1 == block81
 
     seed = get_seed()
     f = open('remonster.{0}.txt'.format(seed), 'w+')

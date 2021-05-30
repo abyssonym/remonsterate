@@ -30,7 +30,7 @@ Older versions of Windows need an update to run Python 3 applications, even when
 If that doesn't work, you can also install Python 3 and run the python version (`run.py`) [here](https://www.python.org/downloads/windows/).
 
 ## Information for Developers:
-ReMONSTERate expands the rom to ExHIROM format and makes several ASM edits to relocate sprites to the free space. The space used is from `$408000` to `$40ffff` and from `$580000` to `$5fffff`. The ASM edits are in `tables/monster_expansion_patch.txt` This rom expansion allows every monster to have a unique sprite and a unique palette, without worrying about running out of space.
+ReMONSTERate expands the rom to ExHIROM format and makes several ASM edits to relocate sprites to the free space. The space used is from `$400000` to `$40ffff` and from `$580000` to `$5fffff`. The ASM edits are in `tables/monster_expansion_patch.txt` This rom expansion allows every monster to have a unique sprite and a unique palette, without worrying about running out of space.
 
 ReMONSTERate has a randomization feature with a tagging system. See `images_and_tags.txt` for information on how to add sprites to the pool and tag them. See `monsters_and_tags.txt` for information on how to require or block specific tags for specific monsters.
 
