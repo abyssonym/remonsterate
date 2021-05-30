@@ -23,8 +23,14 @@ This is ReMONSTERate, a utility to import arbitrary monster sprites into FF6.
 7. For `Rom filename`, enter the filename of the ROM from step 5. For `Seed`, enter any numeric value that you wish, or leave it blank if you don't care. For `Images list filename`, enter the filename of the text file from step 3. For `Monster tags filename`, enter the filename of the text file from step 4.
 8. After some time, the program will finish running. You can now load the rom in your emulator and play with the randomized sprites. If you encounter any bugs, please contact me or report them in the [Beyond Chaos Discord](https://discord.com/invite/S3G3UXy).
 
-## Important information:
-ReMONSTERate expands the rom and makes several ASM edits to relocate sprites to the free space. The space used is from $380000 to $3fffff ($f80000 to $ffffff). The ASM edits are in `tables/monster_expansion_patch.txt` This rom expansion allows every monster to have a unique sprite and a unique palette, without worrying about running out of space.
+## I'm on Windows. Why doesn't the exe work for me?
+
+Older versions of Windows need an update to run Python 3 applications, even when they're packaged as an exe. You can update your version of Windows [here](https://support.microsoft.com/en-us/help/2999226/update-for-universal-c-runtime-in-windows).
+
+If that doesn't work, you can also install Python 3 and run the python version (`run.py`) [here](https://www.python.org/downloads/windows/).
+
+## Information for Developers:
+ReMONSTERate expands the rom to ExHIROM format and makes several ASM edits to relocate sprites to the free space. The space used is from `$408000` to `$40ffff` and from `$580000` to `$5fffff`. The ASM edits are in `tables/monster_expansion_patch.txt` This rom expansion allows every monster to have a unique sprite and a unique palette, without worrying about running out of space.
 
 ReMONSTERate has a randomization feature with a tagging system. See `images_and_tags.txt` for information on how to add sprites to the pool and tag them. See `monsters_and_tags.txt` for information on how to require or block specific tags for specific monsters.
 
@@ -58,7 +64,7 @@ finish_remonster()
 This will randomly select an image from `images` for your chosen `monster`. If you want even more control:
 
 ```python
-monster.load_image(image)
+monster.load_image(image, preserve_palette_order=True)
 finish_remonster()
 ```
 

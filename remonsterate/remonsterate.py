@@ -10,7 +10,7 @@ from PIL import Image
 from math import ceil
 
 
-VERSION = 5
+VERSION = '5.2'
 ALL_OBJECTS = None
 
 
