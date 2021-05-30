@@ -10,9 +10,9 @@ $comp8_pointer          12a820
 $comp16_pointer         12a822
 $monster_graphics       297000
 $end_monster_graphics   2ce3c0
-$new_monster_graphics   380000
-$new_comp8_pointer      3fa820
-$new_comp16_pointer     3fa822
-$new_palette_pointer    3fc000
-$new_code_pointer       3ff800
+$new_monster_graphics   580000
+$new_comp8_pointer      5fa820
+$new_comp16_pointer     5fa822
+$new_palette_pointer    5fc000
+$new_code_pointer       5ff800
 .patch                  monster_expansion_patch.txt

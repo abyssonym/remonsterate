@@ -1,4 +1,5 @@
 from .randomtools.tablereader import (
+    set_global_table_filename,
     set_table_specs, set_global_output_filename, sort_good_order,
     get_open_file, close_file, TableObject, addresses, write_patch)
 from .randomtools.utils import cached_property, utilrandom as random
@@ -548,7 +549,10 @@ class MonsterSpriteObject(TableObject):
 
         return True
 
-    def write_data(self, filename):
+    def write_data(self, filename=None):
+        if filename is None:
+            filename = self.filename
+
         self.image
 
         chosen_palette = MonsterPaletteObject.get_free()
@@ -715,7 +719,9 @@ class MonsterPaletteObject(TableObject):
                 MonsterPaletteObject.new_palettes.append(mpo)
                 return mpo
 
-    def write_data(self, filename):
+    def write_data(self, filename=None):
+        if filename is None:
+            filename = self.filename
         if (self.index < addresses.previous_max_palettes
                 or self in self.new_palettes):
             new_pointer = (addresses.new_palette_pointer
@@ -734,7 +740,9 @@ class MonsterCompMixin(TableObject):
 class MonsterComp8Object(MonsterCompMixin):
     after_order = [MonsterSpriteObject]
 
-    def write_data(self, filename):
+    def write_data(self, filename=None):
+        if filename is None:
+            filename = self.filename
         if self.new_index >= 0:
             assert self.pointer is None
             self.pointer = addresses.new_comp8_pointer + 4 + (
@@ -748,7 +756,9 @@ class MonsterComp8Object(MonsterCompMixin):
 class MonsterComp16Object(MonsterCompMixin):
     after_order = [MonsterComp8Object]
 
-    def write_data(self, filename):
+    def write_data(self, filename=None):
+        if filename is None:
+            filename = self.filename
         if not hasattr(MonsterComp16Object, 'new_base_address'):
             for mc8 in MonsterComp8Object.every:
                 assert mc8.written
@@ -781,15 +791,28 @@ def nuke():
 
 def begin_remonster(outfile, seed):
     global ALL_OBJECTS
+
+    f = open(outfile, 'r+b')
+    f.seek(0x8000)
+    block = f.read(0x8000)
+    f.seek(0x408000)
+    f.write(block)
+    f.close()
+
     set_seed(seed)
     random.seed(seed)
+    set_global_table_filename('tables_list.txt')
     set_global_output_filename(outfile)
-    set_table_specs('tables_list.txt')
 
-    ALL_OBJECTS = sort_good_order(
-        [g for g in globals().values()
-         if isinstance(g, type) and issubclass(g, TableObject)
-         and g not in [TableObject]])
+    ALL_OBJECTS = [
+        g for g in globals().values()
+        if isinstance(g, type) and issubclass(g, TableObject)
+        and g not in [TableObject]]
+
+    set_table_specs(ALL_OBJECTS, 'tables_list.txt')
+
+    ALL_OBJECTS = sort_good_order(ALL_OBJECTS)
+    assert ALL_OBJECTS
 
     for o in ALL_OBJECTS:
         o.every
