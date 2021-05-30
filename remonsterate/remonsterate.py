@@ -1,7 +1,7 @@
 from .randomtools.tablereader import (
-    set_global_table_filename,
+    set_global_table_filename, determine_global_table,
     set_table_specs, set_global_output_filename, sort_good_order,
-    get_open_file, close_file, TableObject, addresses, write_patch)
+    get_open_file, close_file, TableObject, addresses, write_patches)
 from .randomtools.utils import cached_property, utilrandom as random
 from .randomtools.interface import get_outfile, set_seed, get_seed
 from collections import Counter
@@ -796,6 +796,8 @@ def nuke():
 def begin_remonster(outfile, seed):
     global ALL_OBJECTS
 
+    table_list = determine_global_table(outfile)
+
     f = open(outfile, 'r+b')
     f.seek(0x8000)
     block = f.read(0x8000)
@@ -805,7 +807,7 @@ def begin_remonster(outfile, seed):
 
     set_seed(seed)
     random.seed(seed)
-    set_global_table_filename('tables_list.txt')
+
     set_global_output_filename(outfile)
 
     ALL_OBJECTS = [
@@ -813,7 +815,7 @@ def begin_remonster(outfile, seed):
         if isinstance(g, type) and issubclass(g, TableObject)
         and g not in [TableObject]]
 
-    set_table_specs(ALL_OBJECTS, 'tables_list.txt')
+    set_table_specs(ALL_OBJECTS)
 
     ALL_OBJECTS = sort_good_order(ALL_OBJECTS)
     assert ALL_OBJECTS
@@ -826,7 +828,7 @@ def begin_remonster(outfile, seed):
     for index in MonsterSpriteObject.PROTECTED_INDEXES:
         MonsterSpriteObject.get(index).image
 
-    write_patch(outfile, 'monster_expansion_patch.txt')
+    write_patches(outfile)
 
 
 def finish_remonster():
