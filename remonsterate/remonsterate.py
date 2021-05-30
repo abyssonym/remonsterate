@@ -375,6 +375,7 @@ class MonsterSpriteObject(TableObject):
                           (hasattr(c, 'tags') and c.tags & self.blacklist)]
 
         if not candidates:
+            self.load_image(self.image)
             print('INFO: No more suitable images for sprite %x' % self.index)
             return False
 
