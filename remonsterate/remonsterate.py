@@ -417,7 +417,8 @@ class MonsterSpriteObject(TableObject):
         assert set(rgb_palette) == set(new_palette)
         return data, new_palette
 
-    def load_image(self, image, transparency=None):
+    def load_image(self, image, transparency=None,
+                   preserve_palette_order=False):
         if self.is_super_protected:
             return
         if isinstance(image, str):
@@ -516,7 +517,10 @@ class MonsterSpriteObject(TableObject):
             num_tiles_width = 8
 
         data = self.image.tobytes()
-        data, self._palette = self.remap_palette(data, self.palette)
+        remapped = self.remap_palette(data, self.palette)
+        if not preserve_palette_order:
+            data, self._palette = remapped
+
         for jj in range(num_tiles_width):
             stencil_value = 0
             for ii in range(num_tiles_width):
