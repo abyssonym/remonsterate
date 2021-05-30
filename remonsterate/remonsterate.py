@@ -1,5 +1,5 @@
 from .randomtools.tablereader import (
-    set_global_table_filename, determine_global_table,
+    set_global_label, set_global_table_filename, determine_global_table,
     set_table_specs, set_global_output_filename, sort_good_order,
     get_open_file, close_file, TableObject, addresses, write_patches)
 from .randomtools.utils import cached_property, utilrandom as random
@@ -794,10 +794,17 @@ def nuke():
                        addresses.monster_graphics))
 
 
-def begin_remonster(outfile, seed):
+def begin_remonster(outfile, seed, rom_type=None):
     global ALL_OBJECTS
 
-    table_list = determine_global_table(outfile)
+    if rom_type in ('1.0', '1.1'):
+        label = 'FF6_NA_%s' % rom_type
+        set_global_label(label)
+        tables_list = ('tables_list.txt' if rom_type != '1.1'
+                       else 'tables_list_1.1.txt')
+        set_global_table_filename(tables_list)
+    else:
+        table_list = determine_global_table(outfile)
 
     f = open(outfile, 'r+b')
     f.seek(0x8000)
@@ -847,9 +854,9 @@ def finish_remonster():
 
 
 def remonsterate(outfile, seed, images_tags_filename,
-                 monsters_tags_filename=None):
+                 monsters_tags_filename=None, rom_type=None):
     seed = int(seed)
-    begin_remonster(outfile, seed)
+    begin_remonster(outfile, seed, rom_type=rom_type)
 
     images = []
     for line in open(images_tags_filename):

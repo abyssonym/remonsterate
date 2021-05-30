@@ -81,13 +81,31 @@ class RemonstrateGUI(tkinter.Frame):
             )
         rom_widget.grid(row=1, column=1, padx=(0,10), pady=(10,0), sticky='we')
 
-        # Row 2: Seed Information
+        # Row 2: ROM type
+        radioframe = tkinter.Frame(master=self.master)
+        radio_var = tkinter.StringVar(self.master)
+        radio_var.set('AUTO')
+        radio_widget = tkinter.Radiobutton(
+            master=radioframe, text='v1.0 (sketch glitch)',
+            variable=radio_var, value='1.0')
+        radio_widget.pack(side=tkinter.TOP, anchor=tkinter.W)
+        radio_widget = tkinter.Radiobutton(
+            master=radioframe, text='v1.1 (no sketch glitch)',
+            variable=radio_var, value='1.1')
+        radio_widget.pack(side=tkinter.TOP, anchor=tkinter.W)
+        radio_widget = tkinter.Radiobutton(
+            master=radioframe, text='Autodetect',
+            variable=radio_var, value='AUTO')
+        radio_widget.pack(side=tkinter.TOP, anchor=tkinter.W)
+        radioframe.grid(row=2, column=1, padx=(0,10), pady=(10,0), sticky='w')
+
+        # Row 3: Seed Information
         widget = tkinter.Label(
             master=self.master,
             text='Seed',
             font=(self.font, self.font_size)
             )
-        widget.grid(row=2, column=0, padx=(10,10), pady=(10,0), sticky='w')
+        widget.grid(row=3, column=0, padx=(10,10), pady=(10,0), sticky='w')
 
         seed_widget = tkinter.Text(
             master = self.master,
@@ -95,42 +113,42 @@ class RemonstrateGUI(tkinter.Frame):
             width = 10,
             font=(self.font, self.font_size)
             )
-        seed_widget.grid(row=2, column=1, padx=(0,10), pady=(10,0),
+        seed_widget.grid(row=3, column=1, padx=(0,10), pady=(10,0),
                          sticky='we')
 
-        # Row 2: Images File Information
+        # Row 4: Images File Information
         widget = tkinter.Label(
             master=self.master,
             text='Images File',
             font=(self.font, self.font_size)
             )
-        widget.grid(row=3, column=0, padx=(10,10), pady=(10,0), sticky='w')
+        widget.grid(row=4, column=0, padx=(10,10), pady=(10,0), sticky='w')
 
         image_widget = tkinter.ttk.Combobox(
             master = self.master,
             values = self.image_files,
             font=(self.font, self.font_size)
             )
-        image_widget.grid(row=3, column=1, padx=(0,10), pady=(10,0),
+        image_widget.grid(row=4, column=1, padx=(0,10), pady=(10,0),
                           sticky='we')
 
-        # Row 3: Monsters File Information
+        # Row 5: Monsters File Information
         widget = tkinter.Label(
             master=self.master,
             text='Monsters File',
             font=(self.font, self.font_size)
             )
-        widget.grid(row=4, column=0, padx=(10,10), pady=(10,0), sticky='w')
+        widget.grid(row=5, column=0, padx=(10,10), pady=(10,0), sticky='w')
 
         monster_widget = tkinter.ttk.Combobox(
             master = self.master,
             values = self.monster_files,
             font=(self.font, self.font_size)
             )
-        monster_widget.grid(row=4, column=1, padx=(0,10), pady=(10,0),
+        monster_widget.grid(row=5, column=1, padx=(0,10), pady=(10,0),
                             sticky='we')
 
-        # Row 4: Generate Button
+        # Row 6: Generate Button
         # Button event
         def validate(event = None):
             validate = True
@@ -180,7 +198,8 @@ class RemonstrateGUI(tkinter.Frame):
                 remonsterate(current_rom,
                              current_seed,
                              current_images,
-                             current_monsters)
+                             current_monsters,
+                             rom_type=radio_var.get())
                 print('Finished successfully.')
             else:
                 tkinter.messagebox.showerror('Missing Files', error_text)
@@ -191,7 +210,7 @@ class RemonstrateGUI(tkinter.Frame):
             command=lambda:validate(),
             font=(self.font, self.font_size)
             )
-        widget.grid(row=5, column=0, columnspan=2, padx=(10,10), pady=(10,10),
+        widget.grid(row=6, column=0, columnspan=2, padx=(10,10), pady=(10,10),
                     sticky='we')
 
 
